@@ -14,6 +14,8 @@ const OFF := Color(1, 1, 1, 0.12)
 @export var view: PixelArtView
 @export var toggle_key := KEY_H
 @export var start_visible := true
+## Inside the editor dock: no full-screen anchor, no click-to-close, no keyboard shortcuts.
+@export var docked := false
 
 var _panel: PanelContainer
 var _sliders := {}    # label -> {slider, readout, get, format}
@@ -22,12 +24,32 @@ var _buttons := {}    # label -> the hit target for its keyboard shortcut
 
 
 func _ready() -> void:
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	if view == null:
+	if docked:
+		mouse_filter = Control.MOUSE_FILTER_STOP
+	else:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	if view == null and not docked:
 		view = _find_view()
+	_bind()
+
+
+## Point the panel at another view (the editor dock does this when the selection changes).
+func bind(new_view: PixelArtView) -> void:
+	view = new_view
+	if is_inside_tree():
+		_bind()
+
+
+func _bind() -> void:
+	for child in get_children():
+		child.queue_free()
+	_sliders.clear()
+	_switches.clear()
+	_buttons.clear()
 	if view == null:
-		push_warning("PixelArtHud: no PixelArtView in the scene.")
+		if not docked:
+			push_warning("PixelArtHud: no PixelArtView in the scene.")
 		return
 	_build()
 	visible = start_visible
@@ -57,7 +79,7 @@ func _build() -> void:
 	style.content_margin_top = 10
 	style.content_margin_bottom = 12
 	_panel.add_theme_stylebox_override("panel", style)
-	_panel.position = Vector2(16, 16)
+	_panel.position = Vector2.ZERO if docked else Vector2(16, 16)
 	_panel.custom_minimum_size = Vector2(272, 0)
 	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_panel)
@@ -100,6 +122,9 @@ func _build() -> void:
 	_toggle(box, "auto orbit", "O",
 		func(): return _auto_orbit(),
 		func(v): _set_auto_orbit(v))
+
+	if docked:
+		return
 
 	var hint := Label.new()
 	hint.text = "H  hide"
@@ -245,6 +270,8 @@ func _refresh() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if docked:
+		return
 	if not (event is InputEventKey) or not event.pressed or event.echo:
 		return
 	if event.keycode == toggle_key:

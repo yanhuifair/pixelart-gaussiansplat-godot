@@ -1,19 +1,55 @@
 @tool
 extends EditorPlugin
-## Tools for making and importing splat clouds: Project > Tools > Pixel Art Splats.
+## Tools for making and importing splat clouds (Project > Tools > Pixel Art Splats), plus the look
+## panel in a dock, because the overlay only exists while the game runs.
 
 const CONVERT := "Pixel Art Splats: convert .bytes to SplatCloud…"
 const BAKE := "Pixel Art Splats: bake selected meshes to SplatCloud…"
+
+var _hud: PixelArtHud
 
 
 func _enter_tree() -> void:
 	add_tool_menu_item(CONVERT, _convert_bytes)
 	add_tool_menu_item(BAKE, _bake_selected)
 
+	_hud = PixelArtHud.new()
+	_hud.name = "Pixel Art Splats"
+	_hud.docked = true
+	add_control_to_dock(DOCK_SLOT_RIGHT_BL, _hud)
+	_bind_hud()
+
 
 func _exit_tree() -> void:
 	remove_tool_menu_item(CONVERT)
 	remove_tool_menu_item(BAKE)
+	if _hud != null:
+		remove_control_from_docks(_hud)
+		_hud.queue_free()
+		_hud = null
+
+
+func _handles(object: Object) -> bool:
+	return object is Node
+
+
+func _edit(object: Object) -> void:
+	_bind_hud()
+
+
+func _bind_hud() -> void:
+	if _hud == null:
+		return
+	var root := EditorInterface.get_edited_scene_root()
+	var view: PixelArtView = null
+	if root != null:
+		for node in EditorInterface.get_selection().get_selected_nodes():
+			if node is PixelArtView:
+				view = node
+				break
+		if view == null:
+			view = _find_view(root)
+	_hud.bind(view)
 
 
 func _convert_bytes() -> void:
@@ -80,3 +116,13 @@ func _alert(message: String) -> void:
 	dialog.popup_centered()
 	dialog.confirmed.connect(dialog.queue_free)
 	dialog.canceled.connect(dialog.queue_free)
+
+
+func _find_view(root: Node) -> PixelArtView:
+	if root is PixelArtView:
+		return root
+	for child in root.get_children():
+		var found := _find_view(child)
+		if found != null:
+			return found
+	return null

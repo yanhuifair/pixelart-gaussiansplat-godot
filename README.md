@@ -75,9 +75,15 @@ All on `PixelArtView`:
 | `debug_raw` | Show the small splat render on its own, without the pixel pass. |
 
 The panel the [browser viewer](https://splats.cobanov.dev/) puts over the picture ships as
-`PixelArtHud`: drop it next to the view and it edits the same fields, with the site's keys — **H**
-hides it, **Q** palette, **X** hard pixels, **S** 2×2 supersample, **E** outline, **O** auto orbit.
-The demo carries one.
+`PixelArtHud`, in two forms:
+
+- **While authoring:** the plugin puts it in a dock (bottom right). It follows the selected
+  `PixelArtView`, or the first one in the open scene, and writes the scene as you drag.
+- **While playing:** drop a `PixelArtHud` next to the view. It draws over the picture and takes the
+  site's keys — **H** hides it, **Q** palette, **X** hard pixels, **S** 2×2 supersample, **E**
+  outline, **O** auto orbit.
+
+The demo carries the runtime one.
 
 ![The panel over the caravan camp](docs/caravan-hud.png)
 

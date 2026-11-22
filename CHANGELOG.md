@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.1] - 2026-11-23
+
+The panel, in a dock, so it works while you author.
+
+- The plugin adds the hud to the bottom-right dock and rebinds it to the selected `PixelArtView` (or
+  the first one in the open scene), so the look can be tuned without running the game.
+- `PixelArtHud` gained `docked` and `bind()`: the same rows, without the full-screen anchor or the
+  keyboard shortcuts.
+
 ## [1.1.0] - 2026-11-23
 
 The browser viewer's settings panel, in the engine.
