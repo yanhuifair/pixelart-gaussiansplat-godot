@@ -25,6 +25,19 @@ uniform vec3 ps_point_pos[4];
 uniform vec3 ps_point_color[4];
 uniform int ps_point_count = 0;
 uniform float ps_time = 0.0;
+uniform float ps_base = 0.0;   // index of the first instance in this buffer, for the motion's hash
+
+// what the renderer animates, in flags bits 16..23 (see tools/dio_to_bytes.py)
+#define PS_M_RISE 1
+#define PS_M_FLOAT 2
+#define PS_M_BLINK 3
+#define PS_M_TWINKLE 4
+#define PS_M_DRIFT 5
+#define PS_M_SMOKE 7
+#define PS_M_FOG 8
+#define PS_M_SHAFT 9
+#define PS_M_RAY 10
+#define PS_M_PULSE 11
 
 #define PS_EMISSIVE 1
 #define PS_TWO_SIDED 2
@@ -46,6 +59,76 @@ vec3 ps_srgb_to_linear(vec3 c) {
 	vec3 lo = c / 12.92;
 	vec3 hi = pow((c + 0.055) / 1.055, vec3(2.4));
 	return mix(lo, hi, step(vec3(0.04045), c));
+}
+
+// three stable random numbers per splat, the same hash the browser uses
+vec3 ps_hash31(float p) {
+	vec3 p3 = fract(vec3(p) * vec3(0.1031, 0.1030, 0.0973));
+	p3 += dot(p3, p3.yzx + 33.33);
+	return fract((p3.xxy + p3.yzz) * p3.zyx);
+}
+
+// The moving things: port of src/render/particles.js. `param` is the byte above the motion id,
+// 0..4 spread over 0..255 — the height of a smoke column, or the radius sand wraps around.
+void ps_animate(inout vec3 centre, inout vec3 axis1, inout vec3 axis2, inout float alpha,
+		int mode, float par, float index, float t) {
+	if (mode == 0) {
+		return;
+	}
+	vec3 r = ps_hash31(index + 3.0);
+	float k;
+	float s;
+
+	if (mode == PS_M_RISE) {
+		k = fract(t * 0.22 * (0.6 + r.x) + r.y);
+		centre.y += k * par;
+		centre.x += 0.07 * sin(k * 9.0 + r.z * 40.0) * k;
+		centre.z += 0.07 * cos(k * 7.0 + r.x * 40.0) * k;
+		s = 1.0 - 0.6 * k;
+		axis1 *= s;
+		axis2 *= s;
+		alpha *= smoothstep(0.0, 0.05, k) * (1.0 - smoothstep(0.55, 1.0, k));
+	} else if (mode == PS_M_SMOKE) {
+		k = fract(t * 0.09 * (0.6 + r.x) + r.y);
+		centre.y += k * par;
+		centre.x += 0.12 * k * sin(k * 6.0 + r.z * 40.0) + 0.12 * k * k;
+		centre.z += 0.1 * k * cos(k * 5.0 + r.x * 40.0);
+		s = 1.0 + 3.0 * k;
+		axis1 *= s;
+		axis2 *= s;
+		alpha *= smoothstep(0.0, 0.08, k) * (1.0 - smoothstep(0.3, 1.0, k)) * 0.6;
+	} else if (mode == PS_M_BLINK) {
+		centre += 0.12 * vec3(sin(t * 0.5 + r.x * 40.0), 0.6 * sin(t * 0.4 + r.y * 40.0),
+				cos(t * 0.45 + r.z * 40.0));
+		alpha *= smoothstep(0.55, 0.95, sin(t * (0.9 + r.z) + r.x * 60.0));
+	} else if (mode == PS_M_DRIFT) {
+		float radius = par;
+		centre.x = mod(centre.x + t * 0.16 * (0.5 + r.x) + radius, 2.0 * radius) - radius;
+		centre.y += 0.03 * sin(t * 1.3 + r.y * 30.0);
+		alpha *= smoothstep(0.0, 0.25, radius - abs(centre.x));
+	} else if (mode == PS_M_TWINKLE) {
+		alpha *= smoothstep(0.6, 0.98, sin(t * (0.7 + r.z * 1.3) + r.x * 60.0));
+	} else if (mode == PS_M_PULSE) {
+		s = 0.93 + 0.07 * sin(t * 7.0 + r.x * 20.0);
+		axis1 *= s;
+		axis2 *= s;
+	} else if (mode == PS_M_FLOAT) {
+		centre += 0.07 * vec3(sin(t * 0.3 + r.x * 40.0), sin(t * 0.22 + r.y * 40.0),
+				cos(t * 0.27 + r.z * 40.0));
+		alpha *= 0.35 + 0.65 * smoothstep(0.2, 0.9, sin(t * (0.3 + r.z * 0.4) + r.x * 60.0) * 0.5 + 0.5);
+	} else if (mode == PS_M_FOG) {
+		centre.x += 0.25 * sin(t * 0.12 + r.x * 40.0);
+		centre.z += 0.25 * cos(t * 0.1 + r.y * 40.0);
+		centre.y += 0.04 * sin(t * 0.3 + r.z * 30.0);
+		alpha *= 0.55 + 0.45 * sin(t * 0.25 + r.z * 50.0);
+	} else if (mode == PS_M_SHAFT) {
+		centre.x += 0.08 * sin(t * 0.15 + r.x * 20.0);
+		alpha *= 0.5 + 0.5 * sin(t * 0.4 + r.y * 50.0);
+	} else if (mode == PS_M_RAY) {
+		centre.x += 0.025 * sin(t * 0.21 + r.x * 6.0);
+		centre.z += 0.02 * cos(t * 0.17 + r.x * 6.0);
+		alpha *= 0.8 + 0.2 * sin(t * 0.5 + r.y * 50.0);
+	}
 }
 
 vec3 ps_sway(vec3 centre) {
@@ -126,19 +209,22 @@ bool ps_project(vec3 centre, vec3 axis1, vec3 axis2, vec2 uv, mat4 proj, mat4 vi
 
 // Everything vertex() does, with the built-ins handed in.
 void ps_vertex(vec2 uv, mat4 model, vec4 colour, vec4 custom, vec3 cam_pos, mat4 proj, mat4 view,
-		out vec4 clip, out vec3 out_colour, out float out_alpha) {
+		float index, out vec4 clip, out vec3 out_colour, out float out_alpha) {
 	vec3 axis1 = model[0].xyz;
 	vec3 axis2 = model[1].xyz;
 	vec3 n = normalize(model[2].xyz);
 	vec3 centre = model[3].xyz;
 
 	int flags = int(custom.x);
+	float alpha = 1.0;
+	ps_animate(centre, axis1, axis2, alpha, int(custom.y), custom.z * (4.0 / 255.0), index + ps_base, ps_time);
+
 	if ((flags & PS_SWAY) != 0) {
 		centre += ps_sway(centre);
 	}
 
-	out_alpha = colour.a;
-	out_colour = ps_shade(colour.rgb, colour.a, flags, centre, centre, n, cam_pos);
+	out_alpha = colour.a * alpha;
+	out_colour = ps_shade(colour.rgb, out_alpha, flags, centre, centre, n, cam_pos);
 
 	vec3 to_cam = cam_pos - centre;
 	float facing = dot(n, to_cam / max(length(to_cam), 1e-4));

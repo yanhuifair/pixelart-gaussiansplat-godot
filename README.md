@@ -12,7 +12,8 @@ the whole cloud is drawn at twice the art resolution with the Gaussian falloff s
 fullscreen pass votes every 2×2 block of samples into one flat palette colour. Real 3D that reads as
 pixel art: crisp silhouettes, ink outlines, a small palette, no soft splat mush.
 
-147 769 surfels, 16 colours, no textures, two draw calls.
+147 889 surfels, 16 colours, no textures, two draw calls — and the embers, smoke, fireflies and
+drifting sand move without a single CPU update.
 
 ## Install
 
@@ -165,6 +166,12 @@ plugin.cfg, plugin.gd              the editor plugin and its tool menu
 demo/                              Caravan camp: the scene, its cloud, its palette, its look
 ```
 
+A `.dio` world also declares its particles. `tools/dio_to_bytes.py` expands them the way the browser
+does — same lcg, same order — and tags each splat with a motion id in flags bits 16..23 plus one
+parameter in 24..31. The shaders animate them from the splat's index and `ps_time`, so the cloud stays
+one MultiMesh and nothing is touched per frame. `SplatCloudNode.time_override` poses that clock for a
+still.
+
 Three Godot things worth knowing if you change the shaders:
 
 - A splat is one instanced quad. The MultiMesh instance transform carries the two wide axes in its
@@ -188,9 +195,8 @@ Three Godot things worth knowing if you change the shaders:
 - WorldEnvironment tonemapping and glow would break the palette exactness — leave them off.
 - The addon folder must be named `pixel_art_splats`: shader includes and the demo's `.res` refer to
   it by absolute `res://` path.
-- Not ported: particles (the camp's embers and smoke), skinned animation, automatic palettes from a
-  model's colours, the original light-shaft data. The fire itself is baked geometry and halo, so it
-  reads fine; what is missing is the movement above it.
+- Not ported: the `leaf` and `beam` motions (they want a per-splat centre), skinned animation,
+  automatic palettes from a model's colours.
 - Converted clouds want `cull_backfaces` off: the browser never culls splats in a world, and a baked
   silhouette has surfaces facing every way.
 

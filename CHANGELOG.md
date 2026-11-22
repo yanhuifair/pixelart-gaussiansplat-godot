@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.0] - 2026-11-23
+
+The moving things: embers, smoke, fireflies, drifting sand.
+
+- `tools/dio_to_bytes.py` expands a world's `particles` as well — the same lcg, called in the same
+  order as the browser, so the specks land where they do there. They carry a motion id in flags bits
+  16..23 and one parameter in 24..31; the scene's own halos get `pulse`.
+- The splat shaders animate them from the splat index and `ps_time`, vertex-side: no CPU work, no
+  extra buffer. Rise, smoke, blink, twinkle, drift, float, fog, shaft, ray, pulse.
+- The MultiMesh custom data now carries kind, motion and parameter (it used to be kind only).
+- `SplatCloudNode.time_override` poses the clock, for a still or a test.
+- `leaf` and `beam` are not carried yet: they need a per-splat centre.
+
 ## [1.2.0] - 2026-11-23
 
 The look as an asset, so several scenes can share it.

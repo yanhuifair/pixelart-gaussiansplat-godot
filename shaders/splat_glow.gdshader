@@ -12,7 +12,7 @@ void vertex() {
 	vec3 colour;
 	float alpha;
 	ps_vertex(v_uv, MODEL_MATRIX, COLOR, INSTANCE_CUSTOM, INV_VIEW_MATRIX[3].xyz,
-		PROJECTION_MATRIX, VIEW_MATRIX, clip, colour, alpha);
+		PROJECTION_MATRIX, VIEW_MATRIX, float(INSTANCE_ID), clip, colour, alpha);
 	POSITION = clip;
 	v_color = colour;
 	v_alpha = alpha;

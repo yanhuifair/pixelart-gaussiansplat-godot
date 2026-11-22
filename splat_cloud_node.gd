@@ -28,6 +28,7 @@ const GROUP := "pixel_art_splats"
 
 var _solid: MultiMeshInstance3D
 var _glow: MultiMeshInstance3D
+var _solid_count := 0
 var _view_params := {"low_res": Vector2(640, 360), "min_texels": 0.9, "falloff": 0.0}
 
 
@@ -50,8 +51,10 @@ func rebuild() -> void:
 	var quad := QuadMesh.new()
 	quad.size = Vector2(2, 2)
 
+	_solid_count = buffers["solid_count"]
 	_solid = _make(buffers["solid"], buffers["solid_count"], quad, SOLID_SHADER, box)
 	_glow = _make(buffers["glow"], buffers["glow_count"], quad, GLOW_SHADER, box)
+	_push_base()
 	_push_params()
 
 
@@ -85,8 +88,20 @@ func set_view_params(low_res: Vector2, min_texels: float, falloff: float) -> voi
 
 
 ## Called every frame, for the wind.
+## Pose the motion at a fixed time, for a look check or a screenshot. -1 follows the clock.
+@export var time_override := -1.0
+
+
 func set_time(time: float) -> void:
-	_set_param("ps_time", time)
+	_set_param("ps_time", time if time_override < 0.0 else time_override)
+
+
+func _push_base() -> void:
+	# the motion hashes on the splat's index, and the glow buffer starts partway through the cloud
+	if is_instance_valid(_solid) and _solid.material_override != null:
+		_solid.material_override.set_shader_parameter("ps_base", 0.0)
+	if is_instance_valid(_glow) and _glow.material_override != null:
+		_glow.material_override.set_shader_parameter("ps_base", float(_solid_count))
 
 
 func _push_params() -> void:

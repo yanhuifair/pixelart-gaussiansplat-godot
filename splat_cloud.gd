@@ -51,7 +51,7 @@ func has_data() -> bool:
 
 
 ## Splits the cloud into two MultiMesh buffers: solid, then translucent light.
-## Each instance is 12 floats of transform, 4 of colour, 4 of custom data (flags).
+## Each instance is 12 floats of transform, 4 of colour, 4 of custom data: kind, motion, parameter.
 func build_buffers() -> Dictionary:
 	var n := mini(count, data.size() / STRIDE)
 	if n == 0:
@@ -65,6 +65,7 @@ func build_buffers() -> Dictionary:
 	for i in n:
 		var f := i * 16
 		var o := i * 20
+		var flags := data.decode_u32(i * STRIDE + 60)
 		# rows of the 3x4 transform: the basis columns are axis1, axis2 and the normal
 		buf[o + 0] = floats[f + 3]   # axis1.x
 		buf[o + 1] = floats[f + 6]   # axis2.x
@@ -81,10 +82,10 @@ func build_buffers() -> Dictionary:
 		buf[o + 12] = floats[f + 12] # colour.r
 		buf[o + 13] = floats[f + 13] # colour.g
 		buf[o + 14] = floats[f + 14] # colour.b
-		buf[o + 15] = float((data.decode_u32(i * STRIDE + 60) >> 8) & 0xFF) / 255.0
-		buf[o + 16] = float(data.decode_u32(i * STRIDE + 60) & 0xFF)
-		buf[o + 17] = 0.0
-		buf[o + 18] = 0.0
+		buf[o + 15] = float((flags >> 8) & 0xFF) / 255.0
+		buf[o + 16] = float(flags & 0xFF)              # kind
+		buf[o + 17] = float((flags >> 16) & 0xFF)      # motion, for the renderer to animate
+		buf[o + 18] = float((flags >> 24) & 0xFF)      # its parameter, 0..4 over 0..255
 		buf[o + 19] = 0.0
 
 	return {
