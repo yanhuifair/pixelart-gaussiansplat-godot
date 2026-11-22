@@ -1,0 +1,146 @@
+@tool
+class_name SplatCloudNode
+extends Node3D
+## Draws one [SplatCloud] as two MultiMeshes: solid surfels, then translucent light.
+##
+## The pixel resolution, the falloff and the clock are pushed in by [PixelArtView], because the
+## size of the buffer being drawn into depends on the window and the pixel size.
+
+const SOLID_SHADER := preload("res://addons/pixel_art_splats/shaders/splat.gdshader")
+const GLOW_SHADER := preload("res://addons/pixel_art_splats/shaders/splat_glow.gdshader")
+
+const GROUP := "pixel_art_splats"
+
+@export var cloud: SplatCloud:
+	set(value):
+		cloud = value
+		if is_inside_tree():
+			rebuild()
+
+@export_group("Live light")
+## Only affects splats that are not baked (imported meshes, mostly).
+@export_range(0.0, 4.0) var exposure := 1.0
+## Flat light steps for cel shading on live-lit splats. 0 = smooth.
+@export_range(0, 12) var bands := 0
+@export var fog_start := 6.2
+@export var fog_end := 9.0
+@export var cull_backfaces := true
+
+var _solid: MultiMeshInstance3D
+var _glow: MultiMeshInstance3D
+var _view_params := {"low_res": Vector2(640, 360), "min_texels": 0.9, "falloff": 0.0}
+
+
+func _ready() -> void:
+	add_to_group(GROUP)
+	rebuild()
+
+
+func rebuild() -> void:
+	for child in [_solid, _glow]:
+		if is_instance_valid(child):
+			child.queue_free()
+	_solid = null
+	_glow = null
+	if cloud == null or not cloud.has_data():
+		return
+
+	var buffers := cloud.build_buffers()
+	var box := cloud.compute_aabb()
+	var quad := QuadMesh.new()
+	quad.size = Vector2(2, 2)
+
+	_solid = _make(buffers["solid"], buffers["solid_count"], quad, SOLID_SHADER, box)
+	_glow = _make(buffers["glow"], buffers["glow_count"], quad, GLOW_SHADER, box)
+	_push_params()
+
+
+func _make(buffer: PackedFloat32Array, count: int, quad: QuadMesh, shader: Shader, box: AABB) -> MultiMeshInstance3D:
+	if count <= 0:
+		return null
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_colors = true
+	mm.use_custom_data = true
+	mm.mesh = quad
+	mm.instance_count = count
+	mm.buffer = buffer
+
+	var node := MultiMeshInstance3D.new()
+	node.multimesh = mm
+	node.custom_aabb = box
+	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	node.visibility_range_end = 0.0
+	var mat := ShaderMaterial.new()
+	mat.shader = shader
+	node.material_override = mat
+	add_child(node)
+	return node
+
+
+## Called by [PixelArtView] when the window, the pixel size or the look changes.
+func set_view_params(low_res: Vector2, min_texels: float, falloff: float) -> void:
+	_view_params = {"low_res": low_res, "min_texels": min_texels, "falloff": falloff}
+	_push_params()
+
+
+## Called every frame, for the wind.
+func set_time(time: float) -> void:
+	_set_param("ps_time", time)
+
+
+func _push_params() -> void:
+	for node in [_solid, _glow]:
+		if not is_instance_valid(node):
+			continue
+		var mat: ShaderMaterial = node.material_override
+		mat.set_shader_parameter("ps_low_res", _view_params["low_res"])
+		mat.set_shader_parameter("ps_min_texels", _view_params["min_texels"])
+		mat.set_shader_parameter("ps_falloff", _view_params["falloff"])
+		mat.set_shader_parameter("ps_exposure", exposure)
+		mat.set_shader_parameter("ps_bands", float(bands))
+		mat.set_shader_parameter("ps_fog_start", fog_start)
+		mat.set_shader_parameter("ps_fog_end", fog_end)
+		mat.set_shader_parameter("ps_cull", 1.0 if cull_backfaces else 0.0)
+	_push_lights()
+
+
+func _push_lights() -> void:
+	var sun := Vector3(0.45, 0.8, 0.4).normalized()
+	var sun_colour := Color(1, 1, 1)
+	var points: Array[Light3D] = []
+	for node in get_tree().get_nodes_in_group("pixel_art_lights"):
+		if node is DirectionalLight3D and node.visible:
+			sun = -node.global_transform.basis.z
+		elif node is OmniLight3D and node.visible and points.size() < 4:
+			points.append(node)
+
+	var pos := PackedVector3Array()
+	var col := PackedVector3Array()
+	pos.resize(4)
+	col.resize(4)
+	for i in 4:
+		if i < points.size():
+			var l := points[i]
+			pos[i] = l.global_position
+			var k := l.light_energy * 0.35
+			col[i] = Vector3(l.light_color.r * k, l.light_color.g * k, l.light_color.b * k)
+		else:
+			pos[i] = Vector3(0, -99, 0)
+			col[i] = Vector3.ZERO
+
+	for node in [_solid, _glow]:
+		if not is_instance_valid(node):
+			continue
+		var mat: ShaderMaterial = node.material_override
+		mat.set_shader_parameter("ps_sun_dir", sun)
+		mat.set_shader_parameter("ps_point_pos", pos)
+		mat.set_shader_parameter("ps_point_color", col)
+		mat.set_shader_parameter("ps_point_count", points.size())
+
+
+func _set_param(name: StringName, value: Variant) -> void:
+	for node in [_solid, _glow]:
+		if is_instance_valid(node):
+			var mat: ShaderMaterial = node.material_override
+			mat.set_shader_parameter(name, value)

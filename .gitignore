@@ -1,0 +1,13 @@
+# Godot's import cache
+.godot/
+
+# The raw blob the demo .res was converted from: 3.5 MB of duplicate data
+demo/hello_island.bytes
+
+# Editor state and exports
+*.tmp
+export.cfg
+export_presets.cfg
+
+# OS
+.DS_Store
