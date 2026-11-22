@@ -3,7 +3,7 @@
 Gaussian surfels drawn as pixel art, in Godot 4. A port of
 [pixelart-gaussiansplat](https://github.com/cobanov/pixelart-gaussiansplat) (three.js + Spark), and a
 companion to the [Unity package](https://github.com/yanhuifair/pixelart-splats-unity) — same technique,
-same splat data, same palette.
+same 64-byte splat record, same kind of palette.
 
 ![Caravan camp](docs/caravan.png)
 
@@ -38,14 +38,14 @@ palms, a pond — so there is nothing to set up:
 1. Open the scene, press **F6** (run current scene) or make it the main scene and press F5.
 2. Drag to orbit, scroll to zoom — it drifts on its own when left alone.
 
-Done from the command line instead? Godot builds its `class_name` cache in the editor, so warm it once:
+Opening the project from the command line instead? Godot builds its `class_name` cache in the editor,
+so warm that once first; otherwise every script that names `SplatCloudNode` fails with *"Could not
+find type"*:
 
 ```bash
 godot --headless --path . --editor --quit
-godot --path . -- --shot frame.png      # if you keep a dev screenshot helper, see below
+godot --path .
 ```
-
-If you press F5 and get *"Could not find type"*, that cache was not built yet — open the editor once.
 
 ## In your own scene
 
