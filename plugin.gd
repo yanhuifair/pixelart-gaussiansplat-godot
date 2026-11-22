@@ -33,7 +33,7 @@ func _convert_bytes() -> void:
 		return
 	cloud.source = source
 	var target := source.get_basename() + ".res"
-	var err := ResourceSaver.save(cloud, target)
+	var err := ResourceSaver.save(cloud, target, ResourceSaver.FLAG_COMPRESS)
 	if err != OK:
 		_alert("Could not write %s (error %d)" % [target, err])
 		return
@@ -59,7 +59,7 @@ func _bake_selected() -> void:
 		return
 
 	var target := root.scene_file_path.get_base_dir().path_join(meshes[0].name + "_splats.res") if not root.scene_file_path.is_empty() else "res://%s_splats.res" % meshes[0].name
-	var err := ResourceSaver.save(cloud, target)
+	var err := ResourceSaver.save(cloud, target, ResourceSaver.FLAG_COMPRESS)
 	if err != OK:
 		_alert("Could not write %s (error %d)" % [target, err])
 		return

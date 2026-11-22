@@ -1,8 +1,8 @@
 # Godot's import cache
 .godot/
 
-# The raw blob the demo .res was converted from: 3.5 MB of duplicate data
-demo/hello_island.bytes
+# The raw blob the demo .res was converted from: 9.5 MB of duplicate data
+demo/caravan.bytes
 
 # Editor state and exports
 *.tmp

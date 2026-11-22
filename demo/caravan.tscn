@@ -1,17 +1,18 @@
 [gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://addons/pixel_art_splats/splat_cloud_node.gd" id="1_cloud"]
-[ext_resource type="Resource" path="res://addons/pixel_art_splats/demo/hello_island.res" id="2_clouddata"]
+[ext_resource type="Resource" path="res://addons/pixel_art_splats/demo/caravan.res" id="2_clouddata"]
 [ext_resource type="Script" path="res://addons/pixel_art_splats/pixel_art_view.gd" id="3_view"]
-[ext_resource type="Resource" path="res://addons/pixel_art_splats/demo/hello_palette.tres" id="4_pal"]
+[ext_resource type="Resource" path="res://addons/pixel_art_splats/demo/caravan_palette.tres" id="4_pal"]
 
-[node name="HelloIsland" type="Node3D"]
+[node name="Caravan" type="Node3D"]
 
 [node name="Splats" type="Node3D" parent="."]
 script = ExtResource("1_cloud")
 cloud = ExtResource("2_clouddata")
-fog_start = 6.2
-fog_end = 9.0
+fog_start = 9.2
+fog_end = 13.0
+cull_backfaces = false
 
 [node name="PixelArtView" type="Control" parent="."]
 anchors_preset = 15
@@ -21,8 +22,8 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("3_view")
 palette = ExtResource("4_pal")
-pixel_size = 5
-camera_distance = 5.7
-camera_yaw = 22.0
-camera_pitch = 10.0
+pixel_size = 7
+camera_distance = 9.0
+camera_yaw = 50.0
+camera_pitch = 16.7
 camera_target = Vector3(0, -0.02, 0)

@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="PixelArtPalette" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/pixel_art_splats/palette.gd" id="1_pal"]
+
+[resource]
+script = ExtResource("1_pal")
+surface = PackedStringArray("#090c1f", "#161a38", "#2a2444", "#5a3a3c", "#8f5e44", "#c9935a", "#f2cf86", "#fff3c8", "#a8332e", "#5e1f33", "#1d4a40", "#3f8a4c", "#9ad15e", "#2f8f9c", "#8fe6e0", "#ff8a2a")
+glow = PackedStringArray()
+background = "#090c1f"

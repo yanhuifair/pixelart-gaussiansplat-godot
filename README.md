@@ -5,14 +5,14 @@ Gaussian surfels drawn as pixel art, in Godot 4. A port of
 companion to the [Unity package](https://github.com/yanhuifair/pixelart-splats-unity) — same technique,
 same splat data, same palette.
 
-![Hello island](docs/hello-island.png)
+![Caravan camp](docs/caravan.png)
 
 A surface becomes a cloud of flat shaded discs. Each disc carries its own normal, so it can be lit;
 the whole cloud is drawn at twice the art resolution with the Gaussian falloff switched off, and a
 fullscreen pass votes every 2×2 block of samples into one flat palette colour. Real 3D that reads as
 pixel art: crisp silhouettes, ink outlines, a small palette, no soft splat mush.
 
-55 682 surfels, 12 colours, no textures, one draw call per material.
+147 769 surfels, 16 colours, no textures, two draw calls.
 
 ## Install
 
@@ -32,7 +32,8 @@ Requires Godot 4.7 (Forward+). Older 4.x should work; the shaders use nothing ex
 
 ## Try the demo
 
-`demo/hello_island.tscn` ships with the addon, so there is nothing to set up:
+`demo/caravan.tscn` ships with the addon — a caravan camp at an oasis: striped tent, cooking fire,
+palms, a pond — so there is nothing to set up:
 
 1. Open the scene, press **F6** (run current scene) or make it the main scene and press F5.
 2. Drag to orbit, scroll to zoom — it drifts on its own when left alone.
@@ -92,9 +93,9 @@ translucent light.
 | 60 | flags, uint32 — emissive 1, two-sided 2, glow 4, baked 8, up-normal 16, sway 32, alpha in bits 8–15 |
 
 This is byte-for-byte the layout the Unity package writes, so a scene baked there opens here
-unchanged — which is exactly how the demo data was made. The demo ships as a ready-made `.res`; the
-raw `.bytes` it came from is in the [Unity package's
-samples](https://github.com/yanhuifair/pixelart-splats-unity), if you want to try the converter.
+unchanged. The demo data came from the browser project instead: `tools/dio_to_bytes.py` expands one
+of its `.dio` worlds into this layout (`public/models/caravan.dio` → 147 769 surfels), then the
+converter writes the `.res`.
 
 ## Tools
 
@@ -115,6 +116,18 @@ Project → Tools → **Pixel Art Splats**:
   area, colour from the material's albedo, its texture and vertex colours. 18 000 splats for a sphere
   takes about 20 ms.
 
+To bring a world over from the [browser project](https://github.com/cobanov/pixelart-gaussiansplat),
+convert its `.dio` first, then run the same converter:
+
+```bash
+python3 addons/pixel_art_splats/tools/dio_to_bytes.py caravan.dio caravan.bytes
+godot --headless --path . --script res://addons/pixel_art_splats/editor/convert_bytes.gd \
+      -- res://demo/caravan.bytes res://demo/caravan.res 0.02
+```
+
+Both converters write compressed resources: a cloud is mostly float noise, so zstd takes about 40%
+off and costs a few milliseconds to load.
+
 ## How it is put together
 
 ```
@@ -129,8 +142,9 @@ palette.gd                         hex colours → shader uniforms
 orbit_camera.gd                    drag / scroll / drift
 splat_importer.gd                  .bytes blobs and mesh scattering
 editor/convert_bytes.gd            headless converter
+tools/dio_to_bytes.py              .dio (browser world) → this layout
 plugin.cfg, plugin.gd              the editor plugin and its tool menu
-demo/                              Hello Island: the scene, its cloud, its palette
+demo/                              Caravan camp: the scene, its cloud, its palette
 ```
 
 Three Godot things worth knowing if you change the shaders:
@@ -156,8 +170,11 @@ Three Godot things worth knowing if you change the shaders:
 - WorldEnvironment tonemapping and glow would break the palette exactness — leave them off.
 - The addon folder must be named `pixel_art_splats`: shader includes and the demo's `.res` refer to
   it by absolute `res://` path.
-- Not ported: particles, skinned animation, automatic palettes from a model's colours, the original
-  light-shaft data.
+- Not ported: particles (the camp's embers and smoke), skinned animation, automatic palettes from a
+  model's colours, the original light-shaft data. The fire itself is baked geometry and halo, so it
+  reads fine; what is missing is the movement above it.
+- Converted clouds want `cull_backfaces` off: the browser never culls splats in a world, and a baked
+  silhouette has surfaces facing every way.
 
 ## Credits
 

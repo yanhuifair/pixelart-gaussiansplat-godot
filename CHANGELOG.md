@@ -12,4 +12,6 @@ First release.
 - `SplatCloud` resource (64 bytes per surfel, the Unity package's layout), `PixelArtPalette`,
   `PixelArtView` with the camera and the look settings.
 - Editor tools: convert a `.bytes` blob into a `SplatCloud`, and bake selected meshes into one.
-- Demo: Hello Island, 55 682 surfels, 12 colours.
+  Both write compressed resources.
+- `tools/dio_to_bytes.py`: expand a world from the browser project's `.dio` format into this layout.
+- Demo: Caravan camp, 147 769 surfels, 16 colours.

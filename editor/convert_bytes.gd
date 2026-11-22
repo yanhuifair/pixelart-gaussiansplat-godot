@@ -26,6 +26,7 @@ func _init() -> void:
 	cloud.spacing = spacing
 	cloud.source = src
 
-	var err := ResourceSaver.save(cloud, dst)
+	# compressed: a cloud is mostly float noise, so zstd takes about 40% off and costs a few ms to load
+	var err := ResourceSaver.save(cloud, dst, ResourceSaver.FLAG_COMPRESS)
 	print("saved %s: %d surfels (%d solid), spacing %.4f, error %d" % [dst, cloud.count, cloud.opaque_count, spacing, err])
 	quit(0 if err == OK else 1)
