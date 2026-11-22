@@ -10,6 +10,7 @@
 [node name="Splats" type="Node3D" parent="."]
 script = ExtResource("1_cloud")
 cloud = ExtResource("2_clouddata")
+bands = 0
 fog_start = 9.2
 fog_end = 13.0
 cull_backfaces = false

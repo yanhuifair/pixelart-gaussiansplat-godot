@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.1] - 2026-11-23
+
+Defaults aligned with the Unity package, so a cloud looks the same in both without touching anything:
+`bands` now defaults to 5, the browser's cel-step default for live-lit splats (the demo sets 0, as
+scenes are already baked). The caravan demo now says so explicitly, like its Unity twin.
+
 ## [1.0.0] - 2026-11-23
 
 First release.
