@@ -19,9 +19,9 @@ const GROUP := "pixel_art_splats"
 
 @export_group("Live light")
 ## Only affects splats that are not baked (imported meshes, mostly).
-@export_range(0.0, 4.0) var exposure := 1.0
+@export_range(0.5, 2.5, 0.05) var exposure := 1.0
 ## Flat light steps for cel shading on live-lit splats. 0 = smooth.
-@export_range(0, 12) var bands := 5
+@export_range(0, 8) var bands := 5
 @export var fog_start := 6.2
 @export var fog_end := 9.0
 @export var cull_backfaces := true

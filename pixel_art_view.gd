@@ -20,7 +20,7 @@ const PASS_SHADER := preload("res://addons/pixel_art_splats/shaders/pixel_art.gd
 
 @export_group("Pixel grid")
 ## Screen pixels per art pixel. Fixed to the screen, so zooming never changes a pixel's size.
-@export_range(1, 16) var pixel_size := 5
+@export_range(1, 8) var pixel_size := 5
 ## Draw at twice the art resolution: four samples per art pixel, which the pass votes over.
 @export var supersample := true
 

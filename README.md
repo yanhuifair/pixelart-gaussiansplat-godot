@@ -65,7 +65,7 @@ All on `PixelArtView`:
 
 | Field | What it does |
 |---|---|
-| `pixel_size` | Screen pixels per art pixel. Fixed to the screen: zooming changes what is in a pixel, never its size. |
+| `pixel_size` | Screen pixels per art pixel (1..8). Fixed to the screen: zooming changes what is in a pixel, never its size. |
 | `supersample` | Draw at 2× the art resolution: four samples per art pixel, which the pass votes over. Off = one sample. |
 | `crisp` | Hard-edged discs and nearest-sampled palette colours. Off = soft Gaussians, blended. |
 | `outline` | A solid pixel next to the background takes a darker ink of its own colour. |
@@ -73,6 +73,13 @@ All on `PixelArtView`:
 | `dither` | 4×4 ordered (Bayer) dithering between the two nearest palette colours. 0 = off. |
 | `min_texels` | Grows tiny distant splats so surfaces do not fall apart. |
 | `debug_raw` | Show the small splat render on its own, without the pixel pass. |
+
+The panel the [browser viewer](https://splats.cobanov.dev/) puts over the picture ships as
+`PixelArtHud`: drop it next to the view and it edits the same fields, with the site's keys — **H**
+hides it, **Q** palette, **X** hard pixels, **S** 2×2 supersample, **E** outline, **O** auto orbit.
+The demo carries one.
+
+![The panel over the caravan camp](docs/caravan-hud.png)
 
 `SplatCloudNode` holds the cloud plus the live-lighting knobs — `exposure`, `bands` (flat cel steps),
 `fog_start`, `fog_end`, `cull_backfaces`. They only affect splats that are not baked: meshes you bake
@@ -138,6 +145,7 @@ shaders/pixel_art.gdshader         the pixel pass: coverage, palette vote, ink, 
 splat_cloud.gd                     the Resource, and the MultiMesh buffer it builds
 splat_cloud_node.gd                one cloud as two MultiMeshInstance3D (solid, then glow)
 pixel_art_view.gd                  the SubViewport, the camera, the pass, the settings
+pixel_art_hud.gd                   the settings panel, the same one the browser shows
 palette.gd                         hex colours → shader uniforms
 orbit_camera.gd                    drag / scroll / drift
 splat_importer.gd                  .bytes blobs and mesh scattering
