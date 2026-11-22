@@ -61,7 +61,10 @@ the view: `view.camera` is an `OrbitCamera` you can drive with `view.camera.orbi
 
 ## The look
 
-All on `PixelArtView`:
+All on `PixelArtView` — or in a `PixelArtLook` resource, if you would rather have one look shared by
+several scenes. Drop the resource on the view's `look` and the node's fields read and write through to
+it, so the inspector and the hud keep working the same way. The demo ships
+`demo/caravan_look.tres`.
 
 | Field | What it does |
 |---|---|
@@ -151,6 +154,7 @@ shaders/pixel_art.gdshader         the pixel pass: coverage, palette vote, ink, 
 splat_cloud.gd                     the Resource, and the MultiMesh buffer it builds
 splat_cloud_node.gd                one cloud as two MultiMeshInstance3D (solid, then glow)
 pixel_art_view.gd                  the SubViewport, the camera, the pass, the settings
+pixel_art_look.gd                  the same settings as a resource, to share between scenes
 pixel_art_hud.gd                   the settings panel, the same one the browser shows
 palette.gd                         hex colours → shader uniforms
 orbit_camera.gd                    drag / scroll / drift
@@ -158,7 +162,7 @@ splat_importer.gd                  .bytes blobs and mesh scattering
 editor/convert_bytes.gd            headless converter
 tools/dio_to_bytes.py              .dio (browser world) → this layout
 plugin.cfg, plugin.gd              the editor plugin and its tool menu
-demo/                              Caravan camp: the scene, its cloud, its palette
+demo/                              Caravan camp: the scene, its cloud, its palette, its look
 ```
 
 Three Godot things worth knowing if you change the shaders:

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PixelArtLook" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://addons/pixel_art_splats/pixel_art_look.gd" id="1_look"]
+[ext_resource type="Resource" path="res://addons/pixel_art_splats/demo/caravan_palette.tres" id="2_pal"]
+
+[resource]
+script = ExtResource("1_look")
+palette = ExtResource("2_pal")
+pixel_size = 7
+supersample = true
+crisp = true
+outline = true
+quantise = true
+dither = 0.0
+min_texels = 0.9
+debug_raw = false

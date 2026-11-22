@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://addons/pixel_art_splats/splat_cloud_node.gd" id="1_cloud"]
 [ext_resource type="Resource" path="res://addons/pixel_art_splats/demo/caravan.res" id="2_clouddata"]
 [ext_resource type="Script" path="res://addons/pixel_art_splats/pixel_art_view.gd" id="3_view"]
 [ext_resource type="Resource" path="res://addons/pixel_art_splats/demo/caravan_palette.tres" id="4_pal"]
 [ext_resource type="Script" path="res://addons/pixel_art_splats/pixel_art_hud.gd" id="5_hud"]
+[ext_resource type="Resource" path="res://addons/pixel_art_splats/demo/caravan_look.tres" id="6_look"]
 
 [node name="Caravan" type="Node3D"]
 
@@ -23,8 +24,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("3_view")
-palette = ExtResource("4_pal")
-pixel_size = 7
+look = ExtResource("6_look")
 camera_distance = 9.0
 camera_yaw = 50.0
 camera_pitch = 16.7

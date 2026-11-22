@@ -12,32 +12,46 @@ extends Control
 
 const PASS_SHADER := preload("res://addons/pixel_art_splats/shaders/pixel_art.gdshader")
 
-@export var palette: PixelArtPalette:
+@export_group("Shared look")
+## Drop a [PixelArtLook] here and the fields below read and write through to it, so several scenes
+## can share one look. Leave it empty to keep the values on this node.
+@export var look: PixelArtLook:
 	set(value):
-		palette = value
+		look = value
 		if is_inside_tree():
 			_apply_palette()
 
+@export var palette: PixelArtPalette:
+	get = _get_palette, set = _set_palette
+
 @export_group("Pixel grid")
 ## Screen pixels per art pixel. Fixed to the screen, so zooming never changes a pixel's size.
-@export_range(1, 8) var pixel_size := 5
+@export_range(1, 8) var pixel_size: int:
+	get = _get_pixel_size, set = _set_pixel_size
 ## Draw at twice the art resolution: four samples per art pixel, which the pass votes over.
-@export var supersample := true
+@export var supersample: bool:
+	get = _get_supersample, set = _set_supersample
 
 @export_group("Look")
 ## Hard-edged splats and nearest-sampled palette colours. Off draws soft Gaussians, blended.
-@export var crisp := true
+@export var crisp: bool:
+	get = _get_crisp, set = _set_crisp
 ## Silhouettes take a darker ink of their own colour.
-@export var outline := true
+@export var outline: bool:
+	get = _get_outline, set = _set_outline
 ## Snap every pixel to the palette. Off shows the continuous colours.
-@export var quantise := true
+@export var quantise: bool:
+	get = _get_quantise, set = _set_quantise
 ## Ordered (Bayer) dithering between the two nearest palette colours. 0 = off.
-@export_range(0.0, 1.0) var dither := 0.0
+@export_range(0.0, 1.0) var dither: float:
+	get = _get_dither, set = _set_dither
 ## Grow every splat to at least this many source texels so far surfaces do not fall apart.
-@export_range(0.0, 3.0) var min_texels := 0.9
+@export_range(0.0, 3.0) var min_texels: float:
+	get = _get_min_texels, set = _set_min_texels
 
 @export_group("Camera")
-@export var debug_raw := false
+@export var debug_raw: bool:
+	get = _get_debug_raw, set = _set_debug_raw
 @export var camera_target := Vector3(0.0, -0.02, 0.0)
 @export var camera_distance := 5.4
 @export var camera_yaw := 22.0
@@ -148,3 +162,119 @@ func _resize() -> void:
 func _push_to_clouds() -> void:
 	for node in get_tree().get_nodes_in_group(SplatCloudNode.GROUP):
 		node.set_view_params(Vector2(_src), min_texels, 0.0 if crisp else 1.0)
+
+
+# ---- the look, here or in a shared PixelArtLook --------------------------------
+# Each exported field routes through these, so the inspector and the hud keep working whether the
+# values live on the node or on the resource.
+
+var _palette: PixelArtPalette
+var _pixel_size := 5
+var _supersample := true
+var _crisp := true
+var _outline := true
+var _quantise := true
+var _dither := 0.0
+var _min_texels := 0.9
+var _debug_raw := false
+
+
+func _get_palette() -> PixelArtPalette:
+	return look.palette if look != null else _palette
+
+
+func _set_palette(value: PixelArtPalette) -> void:
+	if look != null:
+		look.palette = value
+	else:
+		_palette = value
+	if is_inside_tree():
+		_apply_palette()
+
+
+func _get_pixel_size() -> int:
+	return look.pixel_size if look != null else _pixel_size
+
+
+func _set_pixel_size(value: int) -> void:
+	if look != null:
+		look.pixel_size = value
+	else:
+		_pixel_size = value
+
+
+func _get_supersample() -> bool:
+	return look.supersample if look != null else _supersample
+
+
+func _set_supersample(value: bool) -> void:
+	if look != null:
+		look.supersample = value
+	else:
+		_supersample = value
+
+
+func _get_crisp() -> bool:
+	return look.crisp if look != null else _crisp
+
+
+func _set_crisp(value: bool) -> void:
+	if look != null:
+		look.crisp = value
+	else:
+		_crisp = value
+
+
+func _get_outline() -> bool:
+	return look.outline if look != null else _outline
+
+
+func _set_outline(value: bool) -> void:
+	if look != null:
+		look.outline = value
+	else:
+		_outline = value
+
+
+func _get_quantise() -> bool:
+	return look.quantise if look != null else _quantise
+
+
+func _set_quantise(value: bool) -> void:
+	if look != null:
+		look.quantise = value
+	else:
+		_quantise = value
+
+
+func _get_dither() -> float:
+	return look.dither if look != null else _dither
+
+
+func _set_dither(value: float) -> void:
+	if look != null:
+		look.dither = value
+	else:
+		_dither = value
+
+
+func _get_min_texels() -> float:
+	return look.min_texels if look != null else _min_texels
+
+
+func _set_min_texels(value: float) -> void:
+	if look != null:
+		look.min_texels = value
+	else:
+		_min_texels = value
+
+
+func _get_debug_raw() -> bool:
+	return look.debug_raw if look != null else _debug_raw
+
+
+func _set_debug_raw(value: bool) -> void:
+	if look != null:
+		look.debug_raw = value
+	else:
+		_debug_raw = value

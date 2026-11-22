@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.2.0] - 2026-11-23
+
+The look as an asset, so several scenes can share it.
+
+- `PixelArtLook`: a resource with the palette, the pixel grid and the switches — the same fields the
+  Unity package keeps on its renderer feature.
+- Give a `PixelArtView` a `look` and its own fields read and write through to it: the inspector, the
+  hud and the keyboard shortcuts keep working, they just write to the shared asset. Leave `look` empty
+  and the node keeps its own values, so existing scenes are untouched.
+- The demo ships `demo/caravan_look.tres` and points the view at it.
+
 ## [1.1.1] - 2026-11-23
 
 The panel, in a dock, so it works while you author.
