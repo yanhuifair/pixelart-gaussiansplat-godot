@@ -2,7 +2,7 @@
 
 Gaussian surfels drawn as pixel art, in Godot 4. A port of
 [pixelart-gaussiansplat](https://github.com/cobanov/pixelart-gaussiansplat) (three.js + Spark), and a
-companion to the [Unity package](https://github.com/yanhuifair/pixelart-splats-unity) — same technique,
+companion to the [Unity package](https://github.com/yanhuifair/pixelart-gaussiansplat-unity) — same technique,
 same 64-byte splat record, same kind of palette.
 
 ![Caravan camp](docs/caravan.png)
@@ -21,7 +21,7 @@ shaders include each other by that path.
 
 ```bash
 cd your_project/addons
-git clone https://github.com/yanhuifair/pixelart-splats-godot.git pixel_art_splats
+git clone https://github.com/yanhuifair/pixelart-gaussiansplat-godot.git pixel_art_splats
 ```
 
 Or download the zip and drop the contents there. Then enable it: **Project → Project Settings →
@@ -180,7 +180,7 @@ Three Godot things worth knowing if you change the shaders:
 
 - [pixelart-gaussiansplat](https://github.com/cobanov/pixelart-gaussiansplat) by Mert Cobanov — the
   technique, and the shader and authoring logic this follows. MIT.
-- [Unity package](https://github.com/yanhuifair/pixelart-splats-unity) — the port this one matches.
+- [Unity package](https://github.com/yanhuifair/pixelart-gaussiansplat-unity) — the port this one matches.
 - The idea of pixel-art splat dioramas came from [Silicon Jungle](https://x.com/JungleSilicon).
 
 MIT.
