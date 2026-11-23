@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.0] - 2026-11-23
+
+Converted models, and a palette for them.
+
+- `tools/psf_to_bytes.py` reads a `.psf` — a model the browser project converted from glTF — into the
+  same 64-byte records, recentred and scaled to two units the way the viewer does it. Model material
+  flags (emissive, two-sided) go into the surfel's own bits instead of the alpha the browser smuggles
+  them through, so they never drop below the pixel pass's solid threshold.
+- `PixelArtPalette.extract`: the viewer's k-means over the surface colours at the four brightness
+  levels the lighting produces, plus a lamp's tint. Same constants and the same result as the Unity
+  package, colour for colour.
+
 ## [1.4.0] - 2026-11-23
 
 The two motions that turn around a point, and a colour fix for translucent light.

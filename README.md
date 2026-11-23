@@ -162,8 +162,40 @@ orbit_camera.gd                    drag / scroll / drift
 splat_importer.gd                  .bytes blobs and mesh scattering
 editor/convert_bytes.gd            headless converter
 tools/dio_to_bytes.py              .dio (browser world) → this layout
+tools/psf_to_bytes.py              .psf (converted model) → this layout
 plugin.cfg, plugin.gd              the editor plugin and its tool menu
 demo/                              Caravan camp: the scene, its cloud, its palette, its look
+```
+
+### A converted model
+
+The browser project also converts ordinary 3D models (glTF / GLB) into `.psf`. `tools/psf_to_bytes.py`
+expands one into the same 64-byte records, recentred and scaled the way the viewer does it (longest
+side = 2 units), then the same converter writes the `.res`:
+
+```bash
+python3 tools/psf_to_bytes.py dragon_shield.psf dragon.bytes
+godot --headless --path . --script res://addons/pixel_art_splats/editor/convert_bytes.gd \
+      -- res://demo/dragon.bytes res://demo/dragon.res 0.006
+```
+
+A model is **not baked**: its colour is albedo and the shader lights it, so leave `baked` off and give
+it `bands` (5 is the viewer's default). It also has no palette of its own — see below.
+
+### A palette out of the model's own colours
+
+`PixelArtPalette.extract(colours, k, exposure, lit)` is the viewer's k-means: it samples the surface
+colours under the four brightness levels the lighting will produce, plus the warm tint of a lamp, and
+clusters them. The Unity package has the same function with the same constants, and the two return
+**the same hexes** for the same cloud — that is deliberate, so a model does not come out one colour in
+one engine and another in the other.
+
+```gdscript
+var colours := PackedColorArray()
+for i in cloud.count:
+	colours.append(Color(cloud.data.decode_float(i * 64 + 48),
+		cloud.data.decode_float(i * 64 + 52), cloud.data.decode_float(i * 64 + 56)))
+var hexes := PixelArtPalette.extract(colours, 28, 1.0, Color(1.0, 0.6, 0.25))
 ```
 
 A `.dio` world also declares its particles. `tools/dio_to_bytes.py` expands them the way the browser
