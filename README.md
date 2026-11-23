@@ -156,13 +156,16 @@ splat_cloud.gd                     the Resource, and the MultiMesh buffer it bui
 splat_cloud_node.gd                one cloud as two MultiMeshInstance3D (solid, then glow)
 pixel_art_view.gd                  the SubViewport, the camera, the pass, the settings
 pixel_art_look.gd                  the same settings as a resource, to share between scenes
+pixel_art_lamp.gd                  a scene's lamp, with the viewer's flicker
+pixel_art_rig.gd                   reads a .rig and poses it
 pixel_art_hud.gd                   the settings panel, the same one the browser shows
 palette.gd                         hex colours → shader uniforms
 orbit_camera.gd                    drag / scroll / drift
 splat_importer.gd                  .bytes blobs and mesh scattering
 editor/convert_bytes.gd            headless converter
 tools/dio_to_bytes.py              .dio (browser world) → this layout
-tools/psf_to_bytes.py              .psf (converted model) → this layout
+tools/psf_to_bytes.py              .psf (converted model) → this layout, plus a .skin sidecar
+tools/rig_to_json.py               .rig.glb (skeleton + clips) → .rig, which PixelArtRig plays
 plugin.cfg, plugin.gd              the editor plugin and its tool menu
 demo/                              Caravan camp: the scene, its cloud, its palette, its look
 ```
@@ -181,6 +184,25 @@ godot --headless --path . --script res://addons/pixel_art_splats/editor/convert_
 
 A model is **not baked**: its colour is albedo and the shader lights it, so leave `baked` off and give
 it `bands` (5 is the viewer's default). It also has no palette of its own — see below.
+
+### A skinned model
+
+A rigged model's `.psf` also carries four joint indices and four weights per splat; the converter
+writes them beside the cloud as `<name>.skin` (eight bytes a splat, interleaved), and
+`tools/rig_to_json.py` turns the `<name>.rig.glb` into a `<name>.rig`: bones, their inverse bind
+matrices, and the clips.
+
+```bash
+python3 tools/psf_to_bytes.py minotaur.psf minotaur.bytes
+python3 tools/rig_to_json.py minotaur.rig.glb minotaur.rig '[-0.41, 0, -0.35, 0.41, 1, 0.35]'
+```
+
+The last argument is the model's bounding box (the header of the `.psf` has it): the rig is put
+through the same recentring and scaling the splats got, so a bone's matrix is just
+`world(t) * inverseBind`. Give a `SplatCloudNode` the `rig_path` and a `clip` and it plays; the
+shader does linear blend skinning from a texture, so nothing moves on the CPU but the bones.
+
+`pose_hold` freezes the rig at a time, the way `time_override` freezes the wind.
 
 ### A palette out of the model's own colours
 

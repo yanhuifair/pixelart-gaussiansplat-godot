@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.6.0] - 2026-11-23
+
+Lamps, the viewer's camera move, and skinned models.
+
+- **Lamps.** `PixelArtLamp` is an `OmniLight3D` carrying a world's own lamp: `power`, its index in
+  the row, and the viewer's flicker (`0.86 + 0.1 sin 11t + 0.06 sin 23.7t`). The node re-reads the
+  lights every frame now, so the flicker reaches the splats. Only splats that are **not baked** are
+  lit by them — a baked scene's colour already holds its light, which is why a model on an island
+  flickers and the island does not.
+- **Camera.** `OrbitCamera.drift` follows the viewer's idle move: a scene breathes in and out
+  (`0.7 + 0.3 (0.5 + 0.5 cos 0.11t)`) while a model sways by twelve percent, the height rides
+  `elev + 0.06 sin 0.2t`, and a portrait window steps back (`portraitFit`).
+- **Skinned models.** `tools/psf_to_bytes.py` writes a `.skin` sidecar (four joint indices and four
+  weights a splat), `tools/rig_to_json.py` turns a `.rig.glb` into a `.rig`, and `PixelArtRig` plays
+  it: bones, inverse binds, clips, slerped rotations. The shader does linear blend skinning from a
+  texture, so a pose costs one CPU pass over the bones, not over the splats.
+
+  Unity does not have this half yet; the `.psf`, `.skin` and `.rig` files are shared, so it is the
+  player and the shader that are missing there.
+
 ## [1.5.0] - 2026-11-23
 
 Converted models, and a palette for them.

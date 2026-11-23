@@ -26,6 +26,14 @@ func _init() -> void:
 	cloud.spacing = spacing
 	cloud.source = src
 
+	# a model's joint indices and weights sit beside it, written by tools/psf_to_bytes.py
+	var skin_path := src.get_basename() + ".skin"
+	if not skin_path.ends_with(".skin"):
+		skin_path = src + ".skin"
+	if FileAccess.file_exists(skin_path) and FileAccess.get_file_as_bytes(skin_path).size() == cloud.count * 8:
+		cloud.skin = FileAccess.get_file_as_bytes(skin_path)
+		print("  skinned: %d joint records from %s" % [cloud.count, skin_path])
+
 	# compressed: a cloud is mostly float noise, so zstd takes about 40% off and costs a few ms to load
 	var err := ResourceSaver.save(cloud, dst, ResourceSaver.FLAG_COMPRESS)
 	print("saved %s: %d surfels (%d solid), spacing %.4f, error %d" % [dst, cloud.count, cloud.opaque_count, spacing, err])

@@ -33,6 +33,15 @@ const F_SWAY := 32
 ## How many leading surfels are opaque. The rest are translucent light.
 @export var opaque_count: int = 0
 
+## Joint indices and weights for a skinned model: eight bytes per surfel, four of each, the same
+## order the .psf lists them. Empty for a scene. See tools/psf_to_bytes.py.
+@export var skin: PackedByteArray = PackedByteArray()
+
+
+## True when every surfel has a joint and a weight.
+func is_skinned() -> bool:
+	return skin.size() == count * 8
+
 
 static func from_bytes(path: String) -> SplatCloud:
 	var file := FileAccess.open(path, FileAccess.READ)

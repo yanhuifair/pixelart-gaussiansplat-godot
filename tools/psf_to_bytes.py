@@ -118,9 +118,21 @@ def main():
 
     print(f"{sys.argv[2]}: {count} surfels, spacing {spacing:.4f} -> {h:.5f}, "
           f"longest side {max(extent):.3f} units x {unit:.3f}")
+
     if skin is not None:
-        print("  the model is skinned; its joint indices and weights are in the .psf "
-              "(see the rig notes in README)")
+        # the renderer wants them beside the cloud, eight bytes per splat: four joint indices then
+        # four weights. Kept out of the 64-byte record so a cloud without a rig pays nothing.
+        joints, weights = skin
+        side = sys.argv[2] + ".skin" if not sys.argv[2].endswith(".bytes") else sys.argv[2][:-6] + ".skin"
+        # interleaved: four indices then four weights, one record per splat. The .psf keeps the two
+        # lists apart, which is right for a mesh and wrong for a texture upload.
+        packed = bytearray(count * 8)
+        for i in range(count):
+            packed[i * 8:i * 8 + 4] = joints[i * 4:i * 4 + 4]
+            packed[i * 8 + 4:i * 8 + 8] = weights[i * 4:i * 4 + 4]
+        with open(side, "wb") as f:
+            f.write(bytes(packed))
+        print(f"  skinned: wrote {side} ({count} x 8 bytes)")
 
 
 main()

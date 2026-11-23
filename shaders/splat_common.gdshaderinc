@@ -27,6 +27,16 @@ uniform int ps_point_count = 0;
 uniform float ps_time = 0.0;
 uniform float ps_base = 0.0;   // index of the first instance in this buffer, for the motion's hash
 
+// Skinning. A skinned cloud carries four joint indices and four weights per splat (see
+// tools/psf_to_bytes.py) and the player hands over the bones' matrices as a texture. Only splats
+// with a rig touch this; ps_skinned stays false for a scene.
+uniform bool ps_skinned = false;
+uniform sampler2D ps_skin_idx : filter_nearest;
+uniform sampler2D ps_skin_w : filter_nearest;
+uniform sampler2D ps_bones : filter_nearest;
+uniform int ps_skin_width = 1;
+uniform int ps_bone_count = 0;
+
 // what the renderer animates, in flags bits 16..23 (see tools/dio_to_bytes.py)
 #define PS_M_RISE 1
 #define PS_M_FLOAT 2
@@ -153,6 +163,39 @@ void ps_animate(inout vec3 centre, inout vec3 axis1, inout vec3 axis2, inout flo
 	}
 }
 
+// One bone's matrix: four texels, one per column, so no transpose.
+mat4 ps_bone(int b) {
+	ivec2 at = ivec2(0, b);
+	return mat4(texelFetch(ps_bones, at, 0), texelFetch(ps_bones, at + ivec2(1, 0), 0),
+			texelFetch(ps_bones, at + ivec2(2, 0), 0), texelFetch(ps_bones, at + ivec2(3, 0), 0));
+}
+
+// Linear blend skinning: the splat's centre, its two wide axes and its normal all follow the bones.
+void ps_skin(inout vec3 centre, inout vec3 axis1, inout vec3 axis2, inout vec3 n, float index) {
+	int i = int(index + 0.5);
+	ivec2 at = ivec2(i % ps_skin_width, i / ps_skin_width);
+	vec4 idx = texelFetch(ps_skin_idx, at, 0) * 255.0;
+	vec4 w = texelFetch(ps_skin_w, at, 0);
+
+	mat4 m = mat4(0.0);
+	float total = 0.0;
+	for (int k = 0; k < 4; k++) {
+		int b = int(idx[k] + 0.5);
+		if (b < 0 || b >= ps_bone_count) {
+			continue;
+		}
+		m += w[k] * ps_bone(b);
+		total += w[k];
+	}
+	if (total < 0.001) {
+		return;
+	}
+	centre = (m * vec4(centre, 1.0)).xyz;
+	axis1 = (m * vec4(axis1, 0.0)).xyz;
+	axis2 = (m * vec4(axis2, 0.0)).xyz;
+	n = (m * vec4(n, 0.0)).xyz;
+}
+
 vec3 ps_sway(vec3 centre) {
 	// a whole blade leans, the way the original particles lean one splat
 	return vec3(0.016 * sin(ps_time * 1.6 + centre.x * 5.0 + centre.z * 3.0), 0.0,
@@ -236,6 +279,9 @@ void ps_vertex(vec2 uv, mat4 model, vec4 colour, vec4 custom, vec3 cam_pos, mat4
 	vec3 axis2 = model[1].xyz;
 	vec3 axis3 = model[2].xyz;   // the thin axis, or the pivot for leaf and beam
 	vec3 centre = model[3].xyz;
+	if (ps_skinned) {
+		ps_skin(centre, axis1, axis2, axis3, index + ps_base);
+	}
 	vec3 n = normalize(axis3 + vec3(0.0, 0.0, 1e-6));
 
 	int flags = int(custom.x);
