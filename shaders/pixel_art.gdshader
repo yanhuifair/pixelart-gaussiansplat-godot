@@ -44,6 +44,26 @@ float ps_bayer(vec2 p) {
 	return (PS_BAYER[x + y * 4] + 0.5) / 16.0;
 }
 
+// The buffer holds light that was blended in linear space and then stored sRGB-encoded, so a
+// premultiplied texel is srgb(a * linear(c)). Undo it in linear, not in display space: dividing the
+// stored value by alpha overshoots, and a faint gold beam would snap to the wrong colour.
+vec3 ps_srgb_to_linear(vec3 c) {
+	vec3 lo = c / 12.92;
+	vec3 hi = pow((c + 0.055) / 1.055, vec3(2.4));
+	return mix(lo, hi, step(vec3(0.04045), c));
+}
+
+vec3 ps_linear_to_srgb(vec3 c) {
+	vec3 lo = c * 12.92;
+	vec3 hi = 1.055 * pow(max(c, vec3(0.0)), vec3(1.0 / 2.4)) - 0.055;
+	return mix(lo, hi, step(vec3(0.0031308), c));
+}
+
+// the colour the light had before it was premultiplied, back in display space
+vec3 ps_unpre(vec3 c, float a) {
+	return ps_linear_to_srgb(ps_srgb_to_linear(c) / max(a, 1e-4));
+}
+
 vec4 ps_texel(vec2 t) {
 	vec2 c = clamp(t, vec2(0.0), src_size - 1.0);
 	return texture(splat_tex, (c + 0.5) / src_size);
@@ -177,7 +197,7 @@ void fragment() {
 		smp[i] = (N == 1) ? ps_texel(cell) : ps_texel(cell * 2.0 + vec2(float(i - (i / 2) * 2), float(i / 2)));
 		sum += smp[i];
 		if (smp[i].a > SOLID_ALPHA) {
-			solid_sum += vec4(smp[i].rgb / smp[i].a, 1.0);
+			solid_sum += vec4(ps_unpre(smp[i].rgb, smp[i].a), 1.0);
 		}
 	}
 	sum /= float(N);
@@ -208,7 +228,7 @@ void fragment() {
 			int lab[4] = { -1, -1, -1, -1 };
 			for (int a = 0; a < 4; a++) {
 				if (a < N && smp[a].a > SOLID_ALPHA) {
-					lab[a] = ps_nearest(smp[a].rgb / smp[a].a, true);
+					lab[a] = ps_nearest(ps_unpre(smp[a].rgb, smp[a].a), true);
 				}
 			}
 			int best = 0;
@@ -239,7 +259,7 @@ void fragment() {
 		float a = clamp(sum.a, 0.0, 1.0);
 		col = background * (1.0 - a) + sum.rgb;
 		if (quantise) {
-			col = use_dither ? ps_snap_dither(col, cell, false) : ps_haze(sum.rgb / max(a, 1e-4), a);
+			col = use_dither ? ps_snap_dither(col, cell, false) : ps_haze(ps_unpre(sum.rgb, a), a);
 		}
 	}
 

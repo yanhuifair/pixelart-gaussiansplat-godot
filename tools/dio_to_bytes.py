@@ -38,7 +38,12 @@ KIND_LIT, KIND_EMISSIVE, KIND_SWAY, KIND_GLOW = 0, 1, 2, 3
 
 # what the renderer animates, in flags bits 16..23; the byte above it is one parameter
 MOTION = {"none": 0, "rise": 1, "float": 2, "blink": 3, "twinkle": 4, "drift": 5,
-          "leaf": 6, "smoke": 7, "fog": 8, "shaft": 9, "ray": 10, "pulse": 11}
+          "leaf": 6, "smoke": 7, "fog": 8, "shaft": 9, "ray": 10, "pulse": 11, "beam": 12}
+
+# leaf falls through a column above its centre, beam sweeps around it: those two carry the centre in
+# the surfel's normal slot. Both are translucent, and a translucent splat's normal is never read —
+# the quad is spanned by axis1 and axis2 alone — so the slot is free and the 64-byte record is intact.
+CENTRED = {"leaf", "beam"}
 
 
 class Rng:
@@ -95,7 +100,9 @@ def tangent_frame(n, radius):
 
 
 def rotate(q, v):
-    """Rotate v by the quaternion (x, y, z, w)."""
+    """Rotate v by the quaternion (x, y, z, w); identity when there is no quaternion."""
+    if q is None:
+        return v
     x, y, z, w = q
     # t = 2 * cross(q.xyz, v); v' = v + w * t + cross(q.xyz, t)
     tx = 2.0 * (y * v[2] - z * v[1])
@@ -127,20 +134,33 @@ def particles(meta) -> bytes:
     top = meta.get("top", 1.0)
     spacing = meta["h"]
 
-    def put(x, y, z, sx, sy, sz, alpha, mode):
+    def put(x, y, z, sx, sy, sz, alpha, quat=None):
         hexes = ps["colors"]
         c = hexes[int(rng.next() * len(hexes))]
         r, g, b = (int(c[i:i + 2], 16) / 255.0 for i in (1, 3, 5))
         param = radius if mode == "drift" else (ps["spread"][1] if ps.get("spread") else ps.get("height") or 0.6)
         flags = (GLOW | (max(0, min(255, round(alpha * 255.0))) << 8)
                  | (MOTION[mode] << 16) | (param_byte(param) << 24))
-        out.extend(record((x, y, z), (sx, 0.0, 0.0), (0.0, sy, 0.0), (0.0, 0.0, sz), (r, g, b), flags))
+
+        a1 = rotate(quat, (sx, 0.0, 0.0))
+        a2 = rotate(quat, (0.0, sy, 0.0))
+        nrm = pivot if pivot is not None else rotate(quat, (0.0, 0.0, sz))
+        out.extend(record((x, y, z), a1, a2, nrm, (r, g, b), flags))
 
     for ps in groups:
         mode = "twinkle" if ps.get("still") else ps.get("mode")
-        if mode not in MOTION or mode == "leaf":
-            continue  # leaf would need a per-splat centre; not carried yet
+        if mode not in MOTION:
+            continue
         c = ps.get("center") or [0.0, 0.0, 0.0]
+        pivot = tuple(c) if mode in CENTRED else None
+
+        # explicit shapes, relative to the centre (the lighthouse beam): 8 numbers, the last four
+        # being a quaternion
+        if ps.get("splats"):
+            for b in ps["splats"]:
+                q = tuple(b[7:11]) if len(b) > 7 else None
+                put(c[0] + b[0], c[1] + b[1], c[2] + b[2], b[3], b[4], b[5], b[6], q)
+            continue
 
         if ps.get("points"):
             spots = ps["points"]
@@ -164,15 +184,16 @@ def particles(meta) -> bytes:
         for o in spots:
             alpha = ps.get("alpha", 0.95)
             if mode == "fog":
-                put(o[0], o[1], o[2], 0.3 + rng.next() * 0.25, 0.035, 0.3 + rng.next() * 0.25, alpha, mode)
+                put(o[0], o[1], o[2], 0.3 + rng.next() * 0.25, 0.035, 0.3 + rng.next() * 0.25, alpha)
             elif mode == "shaft":
                 put(o[0], o[1], o[2], 0.07 + rng.next() * 0.06, top * 0.75, 0.07 + rng.next() * 0.06,
-                    alpha, mode)
+                    alpha)
             else:
                 k = spacing * (0.9 if mode == "smoke" else 0.28 + rng.next() * 0.14)
-                put(o[0], o[1], o[2], k, k, k, alpha, mode)
+                # a leaf is a flat flake: half as tall as it is wide
+                put(o[0], o[1], o[2], k, k * 0.6 if mode == "leaf" else k, k, alpha)
                 if ps.get("halo"):
-                    put(o[0], o[1], o[2], k * 5.5, k * 5.5, k * 5.5, 0.18, mode)
+                    put(o[0], o[1], o[2], k * 5.5, k * 5.5, k * 5.5, 0.18)
 
     return bytes(out)
 

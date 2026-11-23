@@ -172,6 +172,12 @@ parameter in 24..31. The shaders animate them from the splat's index and `ps_tim
 one MultiMesh and nothing is touched per frame. `SplatCloudNode.time_override` poses that clock for a
 still.
 
+Two of the motions turn around a point rather than drifting on their own: `leaf` falls through a
+column above its centre, `beam` sweeps around it. Those splats carry the point in their **normal
+slot**, which is free because both are translucent and a translucent splat's normal is never read —
+the quad is spanned by `axis1` and `axis2` alone. So the 64-byte record is unchanged; only the
+meaning of one field depends on the motion.
+
 Three Godot things worth knowing if you change the shaders:
 
 - A splat is one instanced quad. The MultiMesh instance transform carries the two wide axes in its
@@ -195,8 +201,7 @@ Three Godot things worth knowing if you change the shaders:
 - WorldEnvironment tonemapping and glow would break the palette exactness — leave them off.
 - The addon folder must be named `pixel_art_splats`: shader includes and the demo's `.res` refer to
   it by absolute `res://` path.
-- Not ported: the `leaf` and `beam` motions (they want a per-splat centre), skinned animation,
-  automatic palettes from a model's colours.
+- Not ported: skinned animation, automatic palettes from a model's colours.
 - Converted clouds want `cull_backfaces` off: the browser never culls splats in a world, and a baked
   silhouette has surfaces facing every way.
 

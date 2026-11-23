@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.0] - 2026-11-23
+
+The two motions that turn around a point, and a colour fix for translucent light.
+
+- `leaf` (leaves falling through a column) and `beam` (a lighthouse beam sweeping) are carried now.
+  They put their centre in the surfel's **normal slot**: both are translucent, and a translucent
+  splat's normal is never read, so the 64-byte record is untouched. A world that declares `splats`
+  (explicit shapes relative to a centre) generates those too.
+- The pixel pass un-premultiplies translucent light in **linear** space. It was dividing the stored
+  sRGB value by alpha, which overshoots: a faint gold beam came out as the bright palette yellow
+  instead of the muted orange the browser and the Unity package give. Every halo, ember and smoke
+  puff keeps its hue now.
+
 ## [1.3.0] - 2026-11-23
 
 The moving things: embers, smoke, fireflies, drifting sand.

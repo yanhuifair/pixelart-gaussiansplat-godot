@@ -33,11 +33,13 @@ uniform float ps_base = 0.0;   // index of the first instance in this buffer, fo
 #define PS_M_BLINK 3
 #define PS_M_TWINKLE 4
 #define PS_M_DRIFT 5
+#define PS_M_LEAF 6
 #define PS_M_SMOKE 7
 #define PS_M_FOG 8
 #define PS_M_SHAFT 9
 #define PS_M_RAY 10
 #define PS_M_PULSE 11
+#define PS_M_BEAM 12
 
 #define PS_EMISSIVE 1
 #define PS_TWO_SIDED 2
@@ -70,8 +72,11 @@ vec3 ps_hash31(float p) {
 
 // The moving things: port of src/render/particles.js. `param` is the byte above the motion id,
 // 0..4 spread over 0..255 — the height of a smoke column, or the radius sand wraps around.
+// `pivot` is the splat's third axis, except for leaf and beam: those turn around a point, which the
+// importer leaves in that slot instead (both are translucent, and a translucent splat's normal is
+// never read). See tools/dio_to_bytes.py.
 void ps_animate(inout vec3 centre, inout vec3 axis1, inout vec3 axis2, inout float alpha,
-		int mode, float par, float index, float t) {
+		int mode, float par, vec3 pivot, float index, float t) {
 	if (mode == 0) {
 		return;
 	}
@@ -128,6 +133,23 @@ void ps_animate(inout vec3 centre, inout vec3 axis1, inout vec3 axis2, inout flo
 		centre.x += 0.025 * sin(t * 0.21 + r.x * 6.0);
 		centre.z += 0.02 * cos(t * 0.17 + r.x * 6.0);
 		alpha *= 0.8 + 0.2 * sin(t * 0.5 + r.y * 50.0);
+	} else if (mode == PS_M_LEAF) {
+		// fall through a column of height `par` above the pivot, tumbling as it goes
+		float h = max(par, 0.01);
+		centre.y = pivot.y + mod(centre.y - pivot.y - t * 0.14 * (0.6 + r.x), h);
+		float d = centre.y - pivot.y;
+		centre.x += 0.13 * sin(t * 0.9 + r.y * 40.0 + centre.y * 3.0);
+		centre.z += 0.11 * cos(t * 0.7 + r.z * 40.0 + centre.y * 2.5);
+		alpha *= smoothstep(0.0, 0.1, d) * (1.0 - smoothstep(h - 0.3, h, d));
+	} else if (mode == PS_M_BEAM) {
+		// sweep around the vertical through the pivot, and turn the beam with it
+		float ang = t * 0.7;
+		float cs = cos(ang);
+		float sn = sin(ang);
+		vec3 d = centre - pivot;
+		centre = pivot + vec3(cs * d.x + sn * d.z, d.y, -sn * d.x + cs * d.z);
+		axis1 = vec3(cs * axis1.x + sn * axis1.z, axis1.y, -sn * axis1.x + cs * axis1.z);
+		axis2 = vec3(cs * axis2.x + sn * axis2.z, axis2.y, -sn * axis2.x + cs * axis2.z);
 	}
 }
 
@@ -212,12 +234,14 @@ void ps_vertex(vec2 uv, mat4 model, vec4 colour, vec4 custom, vec3 cam_pos, mat4
 		float index, out vec4 clip, out vec3 out_colour, out float out_alpha) {
 	vec3 axis1 = model[0].xyz;
 	vec3 axis2 = model[1].xyz;
-	vec3 n = normalize(model[2].xyz);
+	vec3 axis3 = model[2].xyz;   // the thin axis, or the pivot for leaf and beam
 	vec3 centre = model[3].xyz;
+	vec3 n = normalize(axis3 + vec3(0.0, 0.0, 1e-6));
 
 	int flags = int(custom.x);
 	float alpha = 1.0;
-	ps_animate(centre, axis1, axis2, alpha, int(custom.y), custom.z * (4.0 / 255.0), index + ps_base, ps_time);
+	ps_animate(centre, axis1, axis2, alpha, int(custom.y), custom.z * (4.0 / 255.0), axis3,
+			index + ps_base, ps_time);
 
 	if ((flags & PS_SWAY) != 0) {
 		centre += ps_sway(centre);
